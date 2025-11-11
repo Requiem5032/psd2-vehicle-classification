@@ -1,3 +1,4 @@
+import torch
 import numpy as np
 import pandas as pd
 from scipy import stats, fft
@@ -8,6 +9,23 @@ TOTAL_POINTS = MAX_TIME * SENSOR_RATE
 EVAL_TIME = np.linspace(0, MAX_TIME, TOTAL_POINTS)
 
 
-def interp_data(original_time, original_data):
-    interp_data = np.interp(EVAL_TIME, original_time, original_data)
-    return interp_data
+def process_data(df, eval_time=EVAL_TIME):
+    time = df['time'].to_numpy()
+    ax = df['ax'].to_numpy()
+    ay = df['ay'].to_numpy()
+    az = df['az'].to_numpy()
+
+    ax_interp = np.interp(eval_time, time, ax)
+    ay_interp = np.interp(eval_time, time, ay)
+    az_interp = np.interp(eval_time, time, az)
+    processed_data = torch.stack(
+        [
+            torch.tensor(ax_interp, dtype=torch.float32),
+            torch.tensor(ay_interp, dtype=torch.float32),
+            torch.tensor(az_interp, dtype=torch.float32),
+        ],
+        dim=1,
+    )
+
+    reshaped_data = torch.reshape(processed_data, (-1, SENSOR_RATE*2, 3))
+    return reshaped_data
