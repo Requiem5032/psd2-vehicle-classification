@@ -4,6 +4,7 @@ import pandas as pd
 from scipy import stats, fft
 
 SENSOR_RATE = 25
+WINDOW_SIZE = SENSOR_RATE*2
 MAX_TIME = 150
 TOTAL_POINTS = MAX_TIME * SENSOR_RATE
 EVAL_TIME = np.linspace(0, MAX_TIME, TOTAL_POINTS)
@@ -27,5 +28,5 @@ def process_data(df, eval_time=EVAL_TIME):
         dim=1,
     )
 
-    reshaped_data = torch.reshape(processed_data, (-1, SENSOR_RATE*2, 3))
+    reshaped_data = torch.reshape(processed_data, (-1, WINDOW_SIZE, 3))
     return reshaped_data
