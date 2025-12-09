@@ -10,19 +10,19 @@ def calculate_metrics(true_labels, pred_labels):
     precision = precision_score(
         true_labels,
         pred_labels,
-        average='macro',
+        average='micro',
         zero_division=0,
     )
     recall = recall_score(
         true_labels,
         pred_labels,
-        average='macro',
+        average='micro',
         zero_division=0,
     )
     f1 = f1_score(
         true_labels,
         pred_labels,
-        average='macro',
+        average='micro',
         zero_division=0,
     )
     return {
