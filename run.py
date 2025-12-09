@@ -17,7 +17,7 @@ def main():
         '-f',
         '--file',
         nargs='?',
-        default='data/vehicle_test_data.pkl',
+        default='data/vehicle_data.pkl',
         type=str,
     )
     parser.add_argument(
