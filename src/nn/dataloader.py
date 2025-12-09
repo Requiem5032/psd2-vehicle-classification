@@ -14,8 +14,24 @@ class VehicleSensorDataset(Dataset):
         return features, label
 
 
-def get_dataloader(data_dict, batch_size=16, shuffle=True):
-    dataset = VehicleSensorDataset(data_dict)
+class VehicleSensorDeployDataset(Dataset):
+    def __init__(self, data_tensor):
+        self.data_tensor = data_tensor
+
+    def __len__(self):
+        return len(self.data_tensor)
+
+    def __getitem__(self, idx):
+        features = self.data_tensor[idx]
+        return features
+
+
+def get_dataloader(data_dict, batch_size=16, deploy=False, shuffle=True):
+    if deploy:
+        dataset = VehicleSensorDeployDataset(data_dict)
+    else:
+        dataset = VehicleSensorDataset(data_dict)
+
     dataloader = DataLoader(
         dataset,
         batch_size=batch_size,

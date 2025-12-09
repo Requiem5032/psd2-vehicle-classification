@@ -17,9 +17,9 @@ def process_data(df, eval_time=EVAL_TIME):
     ay = df['ay'].to_numpy()
     az = df['az'].to_numpy()
 
-    ax_interp = np.interp(eval_time, time, ax)
-    ay_interp = np.interp(eval_time, time, ay)
-    az_interp = np.interp(eval_time, time, az)
+    ax_interp = trim_to_multiple(np.interp(eval_time, time, ax), WINDOW_SIZE)
+    ay_interp = trim_to_multiple(np.interp(eval_time, time, ay), WINDOW_SIZE)
+    az_interp = trim_to_multiple(np.interp(eval_time, time, az), WINDOW_SIZE)
     processed_data = torch.stack(
         [
             torch.tensor(ax_interp, dtype=torch.float32),
@@ -29,8 +29,15 @@ def process_data(df, eval_time=EVAL_TIME):
         dim=1,
     )
 
-    reshaped_data = torch.reshape(processed_data, (-1, WINDOW_SIZE, 3))
+    reshaped_data = torch.reshape(
+        processed_data, (-1, WINDOW_SIZE, 3)).transpose(1, 2).contiguous()
     return reshaped_data
+
+
+def trim_to_multiple(arr, multiple):
+    length = len(arr)
+    trimmed_length = length - (length % multiple)
+    return arr[:trimmed_length]
 
 
 def create_dir(dir_path):

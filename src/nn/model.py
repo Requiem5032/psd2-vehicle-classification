@@ -9,17 +9,10 @@ import numpy as np
 
 from src.utils import *
 from src.nn import *
-from sklearn.metrics import (
-    accuracy_score,
-    precision_score,
-    recall_score,
-    f1_score,
-)
-
 
 class NeuralNetwork(nn.Module):
     def __init__(self, input_channels=3, num_classes=3):
-        super(NeuralNetwork, self).__init__()
+        super().__init__()
         self.hidden_activation = nn.ReLU()
         self.final_activation = nn.Softmax(dim=-1)
         self.fc1 = nn.Linear(input_channels*WINDOW_SIZE, 128)
@@ -34,20 +27,43 @@ class NeuralNetwork(nn.Module):
         return x
 
 
-class LogisticRegression(nn.Module):
+class ConvolutionalNeuralNetwork(nn.Module):
     def __init__(self, input_channels=3, num_classes=3):
-        super(LogisticRegression, self).__init__()
+        super().__init__()
+        self.conv1 = nn.Conv1d(
+            in_channels=input_channels,
+            out_channels=16,
+            kernel_size=3,
+            padding=1,
+        )
+        self.conv2 = nn.Conv1d(
+            in_channels=16,
+            out_channels=32,
+            kernel_size=3,
+            padding=1,
+        )
+        self.pool = nn.MaxPool1d(kernel_size=2, stride=2)
+        self.fc1 = nn.Linear(32 * (WINDOW_SIZE // 4), 128)
+        self.fc2 = nn.Linear(128, num_classes)
+        self.hidden_activation = nn.ReLU()
         self.final_activation = nn.Softmax(dim=-1)
-        self.linear = nn.Linear(input_channels*WINDOW_SIZE, num_classes)
 
     def forward(self, x):
+        x = self.conv1(x)
+        x = self.hidden_activation(x)
+        x = self.pool(x)
+        x = self.conv2(x)
+        x = self.hidden_activation(x)
+        x = self.pool(x)
         x = torch.flatten(x, 1)
-        x = self.linear(x)
+        x = self.fc1(x)
+        x = self.hidden_activation(x)
+        x = self.fc2(x)
         x = self.final_activation(x)
         return x
 
 
-def train_model(
+def train_nn(
         model_name,
         ml_model,
         criterion,
@@ -64,13 +80,14 @@ def train_model(
         random.seed(seed)
         np.random.seed(seed)
 
+        results_dir = f'results/{model_name}/seed_{seed}/fold_{fold_num}'
+        create_dir(results_dir)
+
         model = copy.deepcopy(ml_model)
         optimizer = optim.Adam(model.parameters(), lr=learning_rate)
         best_metric = {}
         loss_history = []
         best_loss = float('inf')
-        results_dir = f'results/{model_name}/seed_{seed}/fold_{fold_num}'
-        create_dir(results_dir)
 
         for _ in range(num_epochs):
             model.train()
@@ -91,40 +108,14 @@ def train_model(
                 true_label.extend(labels.cpu().numpy())
                 pred_label.extend(preds.cpu().numpy())
 
-            epoch_accuracy = accuracy_score(
-                true_label,
-                pred_label,
-            )
-            epoch_precision = precision_score(
-                true_label,
-                pred_label,
-                average='macro',
-                zero_division=0,
-            )
-            epoch_recall = recall_score(
-                true_label,
-                pred_label,
-                average='macro',
-                zero_division=0,
-            )
-            epoch_f1 = f1_score(
-                true_label,
-                pred_label,
-                average='macro',
-                zero_division=0,
-            )
+            epoch_metrics = calculate_metrics(true_label, pred_label)
 
             epoch_loss = running_loss / len(train_dataloader)
             loss_history.append(epoch_loss)
 
             if epoch_loss < best_loss:
                 best_loss = epoch_loss
-                best_metric = {
-                    'accuracy': epoch_accuracy,
-                    'precision': epoch_precision,
-                    'recall': epoch_recall,
-                    'f1_score': epoch_f1,
-                }
+                best_metric = epoch_metrics
                 torch.save(
                     model.state_dict(),
                     f'{results_dir}/best_model.pth',
@@ -145,34 +136,7 @@ def train_model(
                 true_label.extend(labels.cpu().numpy())
                 pred_label.extend(preds.cpu().numpy())
 
-        test_accuracy = accuracy_score(
-            true_label,
-            pred_label,
-        )
-        test_precision = precision_score(
-            true_label,
-            pred_label,
-            average='macro',
-            zero_division=0,
-        )
-        test_recall = recall_score(
-            true_label,
-            pred_label,
-            average='macro',
-            zero_division=0,
-        )
-        test_f1 = f1_score(
-            true_label,
-            pred_label,
-            average='macro',
-            zero_division=0,
-        )
-        eval_metrics = {
-            'accuracy': test_accuracy,
-            'precision': test_precision,
-            'recall': test_recall,
-            'f1_score': test_f1,
-        }
+        eval_metrics = calculate_metrics(true_label, pred_label)
 
         with open(f'{results_dir}/best_metric.yaml', 'w') as f:
             yaml.safe_dump(best_metric, f, sort_keys=False)
