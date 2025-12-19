@@ -91,7 +91,7 @@ def main():
 
     # Predict single data point
     else:
-        data_path = args.file
+        data_path = args.data
         data_df = pd.read_csv(data_path)
         processed_data = process_data(data_df)
         with torch.no_grad():
@@ -99,7 +99,8 @@ def main():
             _, predicted = torch.max(outputs, 1)
 
         # Edit this part to give the output format you want (files, stdout, etc.)
-        print(f'Predicted labels: {int(predicted.cpu().numpy())}')
+        print(f'Predicted labels: {list(map(int, predicted.cpu().numpy()))}')
+        print(processed_data.shape)
 
 
 if __name__ == '__main__':

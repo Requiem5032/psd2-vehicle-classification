@@ -17,3 +17,9 @@ This repository contains code and data for classifying vehicle types (bike, bus,
 conda env create -f environment.yaml
 conda activate psd2
 ```
+
+### Example
+```sh
+python run.py --help
+python run.py models/cnn/best_model.pth data/bike.csv
+```
