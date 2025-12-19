@@ -89,7 +89,7 @@ def main():
         plt.show()
 
 
-    # Predict single data point
+    # Predict mode
     else:
         data_path = args.data
         data_df = pd.read_csv(data_path)
