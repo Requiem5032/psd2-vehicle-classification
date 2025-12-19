@@ -12,28 +12,34 @@ from collections import Counter
 
 def main():
     parser = argparse.ArgumentParser(
-        description='Train and evaluate neural network models.')
+        add_help=True,
+        description='Train and evaluate neural network models.',
+    )
     parser.add_argument(
-        '-f',
-        '--file',
-        nargs='?',
-        default='data/vehicle_data.pkl',
+        'model',
         type=str,
+        help='Path to the trained model.'
+    )
+    parser.add_argument(
+        'data',
+        type=str,
+        help='Path to the prediction data csv.'
     )
     parser.add_argument(
         '--eval',
         action='store_true',
+        help='Evaluate the model on the provided dataset.'
     )
+    parser.print_help()
     args = parser.parse_args()
 
     model = ConvolutionalNeuralNetwork()
     model.eval()
-    model_state = torch.load(
-        'results/convolutional_neural_network/averaged_model/best_model.pth')
+    model_state = torch.load(args.model)
     model.load_state_dict(model_state)
 
     if args.eval:
-        with open(args.file, 'rb') as f:
+        with open(args.data, 'rb') as f:
             vehicle_data = pickle.load(f)
             dataloader = get_dataloader(
                 vehicle_data, deploy=False, shuffle=False)
@@ -82,6 +88,8 @@ def main():
         plt.tight_layout()
         plt.show()
 
+
+    # Predict single data point
     else:
         data_path = args.file
         data_df = pd.read_csv(data_path)
@@ -90,6 +98,7 @@ def main():
             outputs = model(processed_data)
             _, predicted = torch.max(outputs, 1)
 
+        # Edit this part to give the output format you want (files, stdout, etc.)
         print(f'Predicted labels: {int(predicted.cpu().numpy())}')
 
 
