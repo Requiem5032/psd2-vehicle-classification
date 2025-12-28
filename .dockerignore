@@ -1,0 +1,51 @@
+# Git
+.git
+.gitignore
+
+# Python
+__pycache__
+*.py[cod]
+*$py.class
+*.so
+.Python
+.env
+.venv
+env/
+venv/
+ENV/
+.pytest_cache/
+.mypy_cache/
+*.egg-info/
+dist/
+build/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+.cursor/
+
+# Data files (except model)
+data/
+*.pkl
+*.csv
+
+# Notebooks
+notebooks/
+*.ipynb
+
+# Results (keep only the model we need)
+results/neural_network/
+results/convolutional_neural_network/seed_*/
+
+# Models directory (using results instead)
+models/
+
+# Documentation
+*.md
+!README.md
+
+# Environment
+environment.yaml
+

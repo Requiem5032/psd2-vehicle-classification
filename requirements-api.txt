@@ -1,0 +1,22 @@
+# Vehicle Classification API Dependencies
+
+# Web Framework
+fastapi==0.115.6
+uvicorn[standard]==0.34.0
+gunicorn==23.0.0
+
+# Data Processing
+pandas==2.2.3
+numpy==2.2.1
+
+# Machine Learning
+torch==2.5.1
+scikit-learn==1.6.0
+scipy==1.15.0
+
+# Validation
+pydantic==2.10.4
+
+# File handling
+python-multipart==0.0.20
+
