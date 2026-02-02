@@ -1,4 +1,5 @@
 import os
+import pickle
 import torch
 import numpy as np
 import pandas as pd
@@ -6,12 +7,9 @@ from scipy import stats, fft
 
 SENSOR_RATE = 25
 WINDOW_SIZE = SENSOR_RATE*2
-MAX_TIME = 150
-TOTAL_POINTS = MAX_TIME * SENSOR_RATE
-EVAL_TIME = np.linspace(0, MAX_TIME, TOTAL_POINTS)
 
 
-def process_data(df, eval_time=EVAL_TIME):
+def process_data(df, eval_time):
     time = df['time'].to_numpy()
     ax = df['ax'].to_numpy()
     ay = df['ay'].to_numpy()
@@ -20,18 +18,46 @@ def process_data(df, eval_time=EVAL_TIME):
     ax_interp = trim_to_multiple(np.interp(eval_time, time, ax), WINDOW_SIZE)
     ay_interp = trim_to_multiple(np.interp(eval_time, time, ay), WINDOW_SIZE)
     az_interp = trim_to_multiple(np.interp(eval_time, time, az), WINDOW_SIZE)
-    processed_data = torch.stack(
+
+    sensor_data = torch.stack(
         [
             torch.tensor(ax_interp, dtype=torch.float32),
             torch.tensor(ay_interp, dtype=torch.float32),
             torch.tensor(az_interp, dtype=torch.float32),
         ],
-        dim=1,
+        dim=0,  # Shape: (3, time_points)
     )
 
-    reshaped_data = torch.reshape(
-        processed_data, (-1, WINDOW_SIZE, 3)).transpose(1, 2).contiguous()
-    return reshaped_data
+    return sensor_data
+
+
+def normalize_time(df):
+    df['time'] = df['time'] - df['time'].min()
+    return df
+
+
+def create_sliding_windows(sensor_data, window_size=WINDOW_SIZE, overlap=0.5):
+    """
+    Create sliding windows from sensor data.
+    
+    Args:
+        sensor_data: Tensor of shape (3, time_points) where 3 = [ax, ay, az]
+        window_size: Size of each window
+        overlap: Overlap ratio between windows (0 to 1)
+    
+    Returns:
+        Tensor of shape (num_windows, 3, window_size)
+    """
+    step = int(window_size * (1 - overlap))
+    windows = []
+    
+    num_time_points = sensor_data.shape[1]  # Get time dimension
+    
+    for i in range(0, num_time_points - window_size + 1, step):
+        window = sensor_data[:, i:i+window_size]  # Shape: (3, window_size)
+        windows.append(window)
+    
+    return torch.stack(windows, dim=0)  # Shape: (num_windows, 3, window_size)
 
 
 def trim_to_multiple(arr, multiple):
@@ -42,3 +68,77 @@ def trim_to_multiple(arr, multiple):
 
 def create_dir(dir_path):
     os.makedirs(dir_path, exist_ok=True)
+
+
+def process_vehicle_dataset(dataframes, labels, output_path, label_mapping=None):
+    """
+    Process multiple vehicle DataFrames and create a consolidated dataset.
+    
+    Args:
+        dataframes: List of pandas DataFrames containing sensor data (with columns: time, ax, ay, az)
+        labels: List of label names corresponding to each DataFrame
+        output_path: Path to save the processed dataset (pickle file)
+        label_mapping: Dictionary mapping label names to integer values.
+                      If None, will create mapping from labels list.
+    
+    Returns:
+        Dictionary with 'data' and 'label' keys containing the processed dataset
+    
+    Example:
+        >>> bike_df = pd.read_csv('data/bike.csv')
+        >>> bus_df = pd.read_csv('data/bus.csv')
+        >>> car_df = pd.read_csv('data/car-clear.csv')
+        >>> dataframes = [bike_df, bus_df, car_df]
+        >>> labels = ['bike', 'bus', 'car']
+        >>> dataset = process_vehicle_dataset(dataframes, labels, 'data/vehicle_data.pkl')
+    """
+    if label_mapping is None:
+        label_mapping = {label: idx for idx, label in enumerate(sorted(set(labels)))}
+    
+    all_windows = []
+    all_labels = []
+    
+    for df, label in zip(dataframes, labels):
+        # Extract time and prepare evaluation points
+        df = normalize_time(df)
+        time_data = df['time'].to_numpy()
+        max_time = np.floor(np.max(time_data))
+        total_points = int(max_time * SENSOR_RATE)
+        eval_time = np.linspace(0, max_time, total_points)
+        
+        # Process the data
+        processed_data = process_data(df, eval_time=eval_time)
+        
+        # Create sliding windows
+        windows = create_sliding_windows(processed_data)
+        
+        # Create labels for these windows
+        label_value = label_mapping[label]
+        window_labels = torch.full((windows.shape[0],), label_value, dtype=torch.long)
+        
+        all_windows.append(windows)
+        all_labels.append(window_labels)
+        
+        print(f'Processed {label}: {windows.shape[0]} windows with label value {label_value}')
+    
+    # Concatenate all data
+    vehicle_data = torch.cat(all_windows, dim=0)
+    vehicle_labels = torch.cat(all_labels, dim=0)
+    
+    # Create dataset dictionary
+    dataset = {
+        'data': vehicle_data,
+        'label': vehicle_labels,
+    }
+    
+    # Save to pickle file
+    with open(output_path, 'wb') as f:
+        pickle.dump(dataset, f)
+    
+    print(f'\nDataset saved to {output_path}')
+    print(f'Total samples: {vehicle_data.shape[0]}')
+    print(f'Data shape: {vehicle_data.shape}')
+    print(f'Label mapping: {label_mapping}')
+    
+    return dataset
+

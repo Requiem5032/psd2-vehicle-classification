@@ -2,6 +2,7 @@ import yaml
 import copy
 import random
 import warnings
+import gc
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -10,8 +11,9 @@ import numpy as np
 from src.utils import *
 from src.nn import *
 
+
 class NeuralNetwork(nn.Module):
-    def __init__(self, input_channels=3, num_classes=3):
+    def __init__(self, input_channels=3, num_classes=2):
         super().__init__()
         self.hidden_activation = nn.ReLU()
         self.final_activation = nn.Softmax(dim=-1)
@@ -28,7 +30,7 @@ class NeuralNetwork(nn.Module):
 
 
 class ConvolutionalNeuralNetwork(nn.Module):
-    def __init__(self, input_channels=3, num_classes=3):
+    def __init__(self, input_channels=3, num_classes=2):
         super().__init__()
         self.conv1 = nn.Conv1d(
             in_channels=input_channels,
@@ -65,6 +67,7 @@ class ConvolutionalNeuralNetwork(nn.Module):
 
 def train_nn(
         model_name,
+        data_name,
         ml_model,
         criterion,
         train_dataloader,
@@ -80,8 +83,8 @@ def train_nn(
         random.seed(seed)
         np.random.seed(seed)
 
-        results_dir = f'results/{model_name}/seed_{seed}/fold_{fold_num}'
-        create_dir(results_dir)
+        model_dir = f'models/{data_name}/{model_name}/seed_{seed}/fold_{fold_num}'
+        create_dir(model_dir)
 
         model = copy.deepcopy(ml_model)
         optimizer = optim.Adam(model.parameters(), lr=learning_rate)
@@ -89,7 +92,7 @@ def train_nn(
         loss_history = []
         best_loss = float('inf')
 
-        for _ in range(num_epochs):
+        for epoch in range(num_epochs):
             model.train()
             true_label = []
             pred_label = []
@@ -118,11 +121,11 @@ def train_nn(
                 best_metric = epoch_metrics
                 torch.save(
                     model.state_dict(),
-                    f'{results_dir}/best_model.pth',
+                    f'{model_dir}/best_model.pth',
                 )
 
         model.load_state_dict(
-            torch.load(f'{results_dir}/best_model.pth'))
+            torch.load(f'{model_dir}/best_model.pth'))
         model.eval()
         eval_metrics = {}
         true_label = []
@@ -138,12 +141,19 @@ def train_nn(
 
         eval_metrics = calculate_metrics(true_label, pred_label)
 
-        with open(f'{results_dir}/best_metric.yaml', 'w') as f:
+        with open(f'{model_dir}/best_metric.yaml', 'w') as f:
             yaml.safe_dump(best_metric, f, sort_keys=False)
-        with open(f'{results_dir}/eval_metrics.yaml', 'w') as f:
+        with open(f'{model_dir}/eval_metrics.yaml', 'w') as f:
             yaml.safe_dump(eval_metrics, f, sort_keys=False)
-        with open(f'{results_dir}/loss_history.yaml', 'w') as f:
+        with open(f'{model_dir}/loss_history.yaml', 'w') as f:
             yaml.safe_dump(loss_history, f, sort_keys=False)
 
         print(
-            f'Training completed for seed {seed}, fold {fold_num}', flush=True)
+            f'Training complete for {model_name}, seed {seed}, fold {fold_num}')
+
+        # Release memory
+        del model
+        del optimizer
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
+        gc.collect()
