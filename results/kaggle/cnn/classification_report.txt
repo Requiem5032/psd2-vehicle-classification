@@ -3,10 +3,10 @@ Classification Report
 ============================================================
               precision    recall  f1-score   support
 
-        Bike     0.7500    0.9310    0.8308        29
-         Car     0.9444    0.7907    0.8608        43
+        Bike     0.8788    0.9831    0.9280        59
+         Car     0.9861    0.8987    0.9404        79
 
-    accuracy                         0.8472        72
-   macro avg     0.8472    0.8609    0.8458        72
-weighted avg     0.8661    0.8472    0.8487        72
+    accuracy                         0.9348       138
+   macro avg     0.9324    0.9409    0.9342       138
+weighted avg     0.9402    0.9348    0.9351       138
 

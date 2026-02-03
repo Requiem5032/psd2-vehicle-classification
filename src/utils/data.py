@@ -70,6 +70,37 @@ def create_dir(dir_path):
     os.makedirs(dir_path, exist_ok=True)
 
 
+def augment_with_noise(sensor_data, noise_level, seed=None):
+    """
+    Add Gaussian noise to sensor data for data augmentation.
+    
+    Args:
+        sensor_data: Tensor of shape (num_windows, 3, window_size) or (3, window_size)
+        noise_level: Standard deviation of Gaussian noise relative to signal std
+        seed: Random seed for reproducibility
+    
+    Returns:
+        Augmented tensor with same shape as input
+    
+    Example:
+        >>> windows = torch.randn(100, 3, 50)  # 100 windows
+        >>> augmented = augment_with_noise(windows, noise_level=0.05)
+    """
+    if seed is not None:
+        torch.manual_seed(seed)
+    
+    # Calculate signal standard deviation
+    signal_std = sensor_data.std()
+    
+    # Generate Gaussian noise
+    noise = torch.randn_like(sensor_data) * signal_std * noise_level
+    
+    # Add noise to signal
+    augmented_data = sensor_data + noise
+    
+    return augmented_data
+
+
 def process_vehicle_dataset(dataframes, labels, output_path, label_mapping=None):
     """
     Process multiple vehicle DataFrames and create a consolidated dataset.

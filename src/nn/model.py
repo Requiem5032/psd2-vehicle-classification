@@ -76,6 +76,8 @@ def train_nn(
         num_epochs,
         seed,
         fold_num,
+        augment=False,
+        noise_level=0.05,
 ):
     with warnings.catch_warnings():
         warnings.simplefilter('ignore')
@@ -99,6 +101,10 @@ def train_nn(
             running_loss = 0.0
 
             for inputs, labels in train_dataloader:
+                # Apply data augmentation if enabled
+                if augment:
+                    inputs = augment_with_noise(inputs, noise_level=noise_level, seed=seed+epoch)
+                
                 optimizer.zero_grad()
                 outputs = model(inputs)
                 loss = criterion(outputs, labels)
