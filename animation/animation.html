@@ -1,0 +1,1334 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vehicle Data Pipeline Visualizer</title>
+    <style>
+        /* Reset and Base Styles */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background-color: #ffffff;
+            color: #0f172a;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            min-height: 100vh;
+            padding: 1.5rem;
+            overflow-x: hidden;
+        }
+
+        /* Utility Classes */
+        .container { max-width: 1280px; margin: 0 auto; }
+        .flex { display: flex; }
+        .flex-col { flex-direction: column; }
+        .items-center { align-items: center; }
+        .items-end { align-items: flex-end; }
+        .justify-between { justify-content: space-between; }
+        .justify-center { justify-content: center; }
+        .gap-2 { gap: 0.5rem; }
+        .gap-3 { gap: 0.75rem; }
+        .gap-4 { gap: 1rem; }
+        .gap-6 { gap: 1.5rem; }
+        .gap-8 { gap: 2rem; }
+        .space-y-2 > * + * { margin-top: 0.5rem; }
+        .space-y-3 > * + * { margin-top: 0.75rem; }
+        .space-y-4 > * + * { margin-top: 1rem; }
+        .space-y-6 > * + * { margin-top: 1.5rem; }
+        .space-y-8 > * + * { margin-top: 2rem; }
+        .hidden { display: none; }
+        .relative { position: relative; }
+        .absolute { position: absolute; }
+        .w-full { width: 100%; }
+        .h-full { height: 100%; }
+        .rounded { border-radius: 0.25rem; }
+        .rounded-lg { border-radius: 0.5rem; }
+        .rounded-xl { border-radius: 0.75rem; }
+        .rounded-full { border-radius: 9999px; }
+        .border { border-width: 1px; }
+        .border-2 { border-width: 2px; }
+        .border-3 { border-width: 3px; }
+        .uppercase { text-transform: uppercase; }
+        .font-bold { font-weight: 700; }
+        .font-black { font-weight: 900; }
+        .italic { font-style: italic; }
+        .opacity-0 { opacity: 0; }
+        .opacity-20 { opacity: 0.2; }
+        .opacity-40 { opacity: 0.4; }
+        .opacity-80 { opacity: 0.8; }
+        .transition-all { transition: all 0.3s; }
+        .transition-opacity { transition: opacity 0.3s; }
+        .overflow-hidden { overflow: hidden; }
+        .inset-0 { top: 0; right: 0; bottom: 0; left: 0; }
+
+        /* Grid System */
+        .grid { display: grid; }
+        .grid-cols-1 { grid-template-columns: repeat(1, minmax(0, 1fr)); }
+        .grid-cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+        .grid-cols-5 { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+        .col-span-4 { grid-column: span 4 / span 4; }
+
+        @media (min-width: 1024px) {
+            .lg\:grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+            .lg\:grid-cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+        }
+
+        /* Text Sizes */
+        .text-xs { font-size: 0.75rem; line-height: 1rem; }
+        .text-sm { font-size: 0.875rem; line-height: 1.25rem; }
+        .text-lg { font-size: 1.125rem; line-height: 1.75rem; }
+        .text-xl { font-size: 1.25rem; line-height: 1.75rem; }
+        .text-2xl { font-size: 1.5rem; line-height: 2rem; }
+
+        /* Spacing */
+        .p-1 { padding: 0.25rem; }
+        .p-2 { padding: 0.5rem; }
+        .p-4 { padding: 1rem; }
+        .p-6 { padding: 1.5rem; }
+        .p-8 { padding: 2rem; }
+        .px-1 { padding-left: 0.25rem; padding-right: 0.25rem; }
+        .px-2 { padding-left: 0.5rem; padding-right: 0.5rem; }
+        .px-3 { padding-left: 0.75rem; padding-right: 0.75rem; }
+        .py-1 { padding-top: 0.25rem; padding-bottom: 0.25rem; }
+        .pl-3 { padding-left: 0.75rem; }
+        .pt-1 { padding-top: 0.25rem; }
+        .pb-4 { padding-bottom: 1rem; }
+        .mt-1 { margin-top: 0.25rem; }
+        .mt-2 { margin-top: 0.5rem; }
+        .mt-14 { margin-top: 3.5rem; }
+        .mb-2 { margin-bottom: 0.5rem; }
+        .mb-4 { margin-bottom: 1rem; }
+        .ml-4 { margin-left: 1rem; }
+        .top-1 { top: 0.25rem; }
+        .top-2 { top: 0.5rem; }
+        .top-4 { top: 1rem; }
+        .top-6 { top: 1.5rem; }
+        .left-1 { left: 0.25rem; }
+        .left-6 { left: 1.5rem; }
+        .right-2 { right: 0.5rem; }
+        .bottom-2 { bottom: 0.5rem; }
+        .bottom-4 { bottom: 1rem; }
+        .-bottom-6 { bottom: -1.5rem; }
+
+        /* Colors */
+        .text-white { color: #0f172a; }
+        .text-slate-200 { color: #0f172a; }
+        .text-slate-400 { color: #475569; }
+        .text-slate-500 { color: #334155; }
+        .text-blue-100 { color: #1e40af; }
+        .text-blue-400 { color: #1d4ed8; }
+        .text-purple-400 { color: #7c3aed; }
+        .text-amber-300 { color: #d97706; }
+        .text-amber-400 { color: #b45309; }
+        .text-emerald-200 { color: #047857; }
+        .text-emerald-300 { color: #059669; }
+        .text-emerald-400 { color: #047857; }
+        .text-pink-200 { color: #be185d; }
+        .text-rose-300 { color: #be123c; }
+        .text-yellow-400 { color: #a16207; }
+
+        .bg-slate-700 { background-color: #cbd5e1; }
+        .bg-slate-800 { background-color: #f1f5f9; }
+        .bg-slate-900 { background-color: #ffffff; }
+        .bg-slate-950 { background-color: #ffffff; }
+        .bg-blue-600 { background-color: #2563eb; }
+        .bg-blue-500 { background-color: #3b82f6; }
+        .bg-purple-600 { background-color: #9333ea; }
+        .bg-amber-500 { background-color: #f59e0b; }
+        .bg-emerald-500 { background-color: #10b981; }
+        .bg-pink-500 { background-color: #ec4899; }
+        .bg-rose-500 { background-color: #f43f5e; }
+
+        .border-slate-600 { border-color: #64748b; }
+        .border-slate-700 { border-color: #475569; }
+        .border-slate-800 { border-color: #334155; }
+        .border-blue-400 { border-color: #60a5fa; }
+        .border-blue-500 { border-color: #3b82f6; }
+        .border-purple-400 { border-color: #c084fc; }
+        .border-purple-500 { border-color: #a855f7; }
+        .border-amber-500 { border-color: #f59e0b; }
+        .border-emerald-500 { border-color: #10b981; }
+        .border-yellow-500 { border-color: #eab308; }
+
+        /* Component Styles */
+        .card {
+            background-color: rgba(248, 250, 252, 0.8);
+            border: 1px solid #cbd5e1;
+            border-radius: 0.75rem;
+            padding: 1rem;
+        }
+
+        .btn {
+            padding: 0.25rem 0.75rem;
+            border-radius: 0.25rem;
+            font-size: 0.75rem;
+            cursor: pointer;
+            transition: all 0.3s;
+            border: 1px solid;
+        }
+
+        .btn:hover { background-color: #cbd5e1; }
+
+        .btn-active {
+            background-color: #2563eb;
+            border-color: #60a5fa;
+            color: #0f172a;
+        }
+
+        /* Header */
+        .header {
+            border-bottom: 1px solid #cbd5e1;
+            padding-bottom: 1rem;
+        }
+
+        .header h1 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #0f172a;
+            letter-spacing: -0.025em;
+        }
+
+        .header p {
+            font-size: 0.875rem;
+            color: #475569;
+            font-style: italic;
+        }
+
+        /* Section Headers with Z-index fix */
+        .section-header {
+            position: relative;
+            z-index: 200;
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            padding: 0.4rem 0.6rem;
+            background-color: #0f172a;
+            color: #ffffff;
+            border-radius: 0.25rem;
+            pointer-events: none;
+        }
+
+        .section-header-blue { background-color: #1e40af; border-left: 3px solid #3b82f6; }
+        .section-header-purple { background-color: #7c3aed; border-left: 3px solid #a855f7; }
+        .section-header-amber { background-color: #d97706; border-left: 3px solid #f59e0b; }
+        .section-header-emerald { background-color: #047857; border-left: 3px solid #10b981; font-weight: 900; }
+
+        /* Canvas Containers */
+        .canvas-container {
+            background-color: #f8fafc;
+            border: 1px solid #cbd5e1;
+            border-radius: 0.5rem;
+            padding: 0.5rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Tensor View */
+        .tensor-view {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+        }
+
+        .cnn-layer {
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+        }
+
+        .active-layer {
+            filter: brightness(1.2);
+            transform: scale(1.1);
+            z-index: 50;
+        }
+
+        /* Segmented Block Styles */
+        .tensor-stack { display: flex; flex-direction: column; gap: 2px; }
+        .tensor-block {
+            background-color: #2563eb;
+            background: rgba(37, 99, 235, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            width: 100%;
+            transition: all 0.3s;
+        }
+        .pool-block {
+            background-color: #dc2626; background: rgba(239, 68, 68, 0.6); }
+        .dense-block {
+            background-color: #059669; background: rgba(16, 185, 129, 0.6); }
+
+        /* Animations */
+        @keyframes pulse-emerald {
+            0%, 100% { border-color: #10b981; box-shadow: 0 0 5px #10b981; }
+            50% { border-color: #34d399; box-shadow: 0 0 15px #34d399; }
+        }
+        .window-active { animation: pulse-emerald 1s infinite; }
+
+        @keyframes upload {
+            0% { transform: translateY(0); opacity: 0.5; }
+            50% { transform: translateY(-10px); opacity: 1; }
+            100% { transform: translateY(0); opacity: 0.5; }
+        }
+        .cloud-upload { animation: upload 2s infinite; }
+
+        @keyframes fade-overlap {
+            0% { opacity: 0.5; }
+            100% { opacity: 0.1; }
+        }
+        .overlap-fade { animation: fade-overlap 0.5s forwards; }
+
+        @keyframes flow-data {
+            0% { transform: translateY(0); opacity: 0; }
+            50% { opacity: 1; }
+            100% { transform: translateY(100px); opacity: 0; }
+        }
+        .data-flow { animation: flow-data 2s infinite; }
+
+        @keyframes slide-window-train {
+            0% { left: 0%; }
+            100% { left: 70%; }
+        }
+        .sliding-train { animation: slide-window-train 3s ease-in-out infinite; }
+
+        @keyframes progress-fill {
+            0% { width: 0%; }
+            100% { width: 100%; }
+        }
+
+        /* Windows */
+        .sliding-window {
+            position: absolute;
+            top: 0.5rem;
+            bottom: 0.5rem;
+            border: 3px solid #10b981;
+            background-color: rgba(16, 185, 129, 0.15);
+            z-index: 20;
+            transition: left 0.8s ease-in-out, width 0.8s ease-in-out;
+            display: flex;
+            align-items: flex-start;
+            justify-content: center;
+            padding-top: 0.25rem;
+        }
+
+        .overlap-window {
+            position: absolute;
+            top: 0.5rem;
+            bottom: 0.5rem;
+            border: 3px solid #f59e0b;
+            background-color: rgba(245, 158, 11, 0.25);
+            z-index: 10;
+            transition: left 0.8s ease-in-out, width 0.8s ease-in-out;
+            display: none;
+        }
+
+        .window-label {
+            font-size: 9px;
+            font-weight: 900;
+            background-color: rgba(255, 255, 255, 0.95);
+            padding: 2px 6px;
+            border-radius: 3px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        /* Output Node */
+        .output-node {
+            background-color: #ffffff;
+            border: 3px solid #0f172a;
+            border-radius: 0.75rem;
+            width: 80px;
+            height: 80px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.5s;
+        }
+
+        .output-node.active {
+            border-color: #3b82f6;
+            transform: scale(1.1);
+        }
+
+        /* Progress Bar */
+        .progress-bar {
+            width: 100%;
+            background-color: #1e293b;
+            height: 6px;
+            border-radius: 9999px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background-color: #3b82f6;
+            width: 0;
+            transition: width 0.5s;
+        }
+
+        /* Status Badge */
+        .status-badge {
+            background-color: #0f172a;
+            color: #ffffff;
+            padding: 0.25rem 0.75rem;
+            border-radius: 0.25rem;
+            font-size: 0.75rem;
+            font-weight: 700;
+            letter-spacing: 0.05em;
+        }
+
+        /* Scale utilities */
+        .scale-90 { transform: scale(0.9); }
+        .scale-110 { transform: scale(1.1); }
+        @media (min-width: 1280px) {
+            .xl\:scale-100 { transform: scale(1); }
+        }
+
+        /* Specific sizes */
+        .w-3 { width: 0.75rem; }
+        .w-4 { width: 1rem; }
+        .w-5 { width: 1.25rem; }
+        .w-6 { width: 1.5rem; }
+        .w-8 { width: 2rem; }
+        .w-10 { width: 2.5rem; }
+        .w-12 { width: 3rem; }
+        .w-20 { width: 5rem; }
+        .w-24 { width: 6rem; }
+        .w-32 { width: 8rem; }
+        .h-1 { height: 0.25rem; }
+        .h-2 { height: 0.5rem; }
+        .h-3 { height: 0.75rem; }
+        .h-5 { height: 1.25rem; }
+        .h-12 { height: 3rem; }
+        .h-16 { height: 4rem; }
+        .h-24 { height: 6rem; }
+        .h-32 { height: 8rem; }
+        .h-40 { height: 10rem; }
+        .max-w-xs { max-width: 20rem; }
+        .max-w-2xl { max-width: 42rem; }
+
+        /* Flexbox spacing */
+        .flex-1 { flex: 1 1 0%; }
+
+        /* Text alignment */
+        .text-center { text-align: center; }
+
+        /* Transform */
+        .-translate-x-1\/2 { transform: translateX(-50%); }
+        .left-1\/2 { left: 50%; }
+
+        /* Letter spacing */
+        .tracking-tight { letter-spacing: -0.025em; }
+        .tracking-tighter { letter-spacing: -0.05em; }
+        .tracking-widest { letter-spacing: 0.1em; }
+
+        /* Line dash for split line */
+        .dashed-line {
+            stroke-dasharray: 5, 5;
+        }
+
+        /* Fit utilities */
+        .w-fit { width: fit-content; }
+
+        /* Prevent horizontal scroll and ensure headers sit above animations */
+        body { overflow-x: hidden; }
+
+        /* Workflow styles */
+        .workflow-box {
+            padding: 0.75rem;
+            border-radius: 0.5rem;
+            transition: all 0.5s ease;
+            min-height: 50px;
+        }
+
+        .workflow-box.active {
+            transform: scale(1.05);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .workflow-column {
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Tensor Stack Visualization for Sliding Windows */
+        .tensor-windows-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            padding: 1.5rem;
+        }
+
+        .tensor-window {
+            display: flex;
+            flex-direction: column;
+            gap: 1px;
+            border: 2px solid #64748b;
+            border-radius: 0.25rem;
+            padding: 0.25rem;
+            background-color: #f8fafc;
+            position: relative;
+        }
+
+        .tensor-layer {
+            height: 8px;
+            background: linear-gradient(90deg, #3b82f6 0%, #60a5fa 100%);
+            border-radius: 1px;
+        }
+
+        .window-number {
+            position: absolute;
+            top: -1.5rem;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 0.7rem;
+            font-weight: 700;
+            color: #64748b;
+        }
+
+        /* Validation Color Box */
+        .validation-box {
+            display: flex;
+            height: 100px;
+            border-radius: 0.5rem;
+            overflow: hidden;
+            border: 2px solid #334155;
+        }
+
+        .train-section {
+            flex: 4;
+            background: linear-gradient(135deg, #10b981 0%, #34d399 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 900;
+            font-size: 1.2rem;
+            color: white;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.2);
+        }
+
+        .val-section {
+            flex: 1;
+            background: linear-gradient(135deg, #9333ea 0%, #c084fc 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            writing-mode: vertical-rl;
+            text-orientation: mixed;
+            font-weight: 900;
+            font-size: 0.9rem;
+            color: white;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.2);
+        }
+    </style>
+</head>
+<body>
+    <div class="container space-y-4">
+        <!-- Header -->
+        <div class="header space-y-3">
+            <div class="flex justify-between items-end">
+                <div>
+                    <h1>Vehicle Pipeline: Production Inference</h1>
+                    <p>Cloud-native data slicing & 1D-CNN convergence</p>
+                </div>
+                <div class="flex gap-2 bg-slate-900 p-1 rounded-lg border border-slate-800">
+                    <button onclick="setTab('inference')" id="tabInference" class="btn btn-active">Inference</button>
+                    <button onclick="setTab('trainTest')" id="tabTrainTest" class="btn bg-slate-800 border-slate-600 text-slate-200">Data Split</button>
+                    <button onclick="setTab('workflow')" id="tabWorkflow" class="btn bg-slate-800 border-slate-600 text-slate-200">Workflow</button>
+                </div>
+            </div>
+            <div id="modeButtons" class="flex gap-2 bg-slate-900 p-1 rounded-lg border border-slate-800 w-fit">
+                <button onclick="setMode('bike')" id="btnBike" class="btn bg-slate-800 border-slate-600 text-slate-400">Bike</button>
+                <button onclick="setMode('car')" id="btnCar" class="btn bg-slate-800 border-slate-600 text-slate-400">Car</button>
+                <button onclick="setMode('random')" id="btnRandom" class="btn bg-purple-600 border-purple-400" style="color: #0f172a;">Random Sampling</button>
+            </div>
+        </div>
+
+        <!-- INFERENCE PANEL -->
+        <div id="inferencePanel" class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <!-- SECTION 1: DATA SLICING -->
+            <div class="card space-y-6">
+                <div class="flex justify-between items-center">
+                    <h2 class="section-header section-header-blue">Input Stream & Slicing</h2>
+                    <div id="stepIndicator" class="status-badge">STATUS: READY</div>
+                </div>
+
+                <!-- Raw Stream -->
+                <div class="relative">
+                    <div class="flex justify-between items-center mb-2">
+                        <span style="font-size: 10px; color: #64748b; font-weight: 700; text-transform: uppercase; letter-spacing: -0.05em;">Raw Sensor Stream</span>
+                        <span id="overlapLabel" style="font-size: 11px; color: #d97706; font-weight: 900; text-transform: uppercase; letter-spacing: 0.05em;" class="opacity-0 transition-opacity">⚠ 50% OVERLAP</span>
+                    </div>
+                    <div class="canvas-container" style="height: 140px;">
+                        <canvas id="rawCanvas" class="w-full h-full"></canvas>
+
+                        <!-- Previous Window (Yellow - shows overlap) -->
+                        <div id="overlapWindow" class="overlap-window">
+                            <span class="window-label text-amber-400" style="position: absolute; top: 0.25rem; left: 50%; transform: translateX(-50%);">PREV</span>
+                        </div>
+
+                        <!-- Current Sliding Window (Green) -->
+                        <div id="slidingWindow" class="sliding-window">
+                            <span class="window-label text-emerald-400">CURRENT</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Processed Buffer -->
+                <div class="relative">
+                    <span style="font-size: 10px; color: #64748b; font-weight: 700; text-transform: uppercase; letter-spacing: -0.05em; display: block; margin-bottom: 0.5rem;">Segmented Buffer (128 samples)</span>
+                    <div class="canvas-container relative flex items-center justify-center" style="height: 80px;">
+                        <canvas id="bufferCanvas" class="w-full h-full opacity-80"></canvas>
+                        <div id="processOverlay" class="absolute inset-0 opacity-0 transition-opacity flex items-center justify-center" style="background-color: rgba(59, 130, 246, 0.2);">
+                            <span class="text-xs font-bold text-blue-100 uppercase" style="letter-spacing: 0.1em;">Processing Tensor...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SECTION 2: CNN MODEL -->
+            <div class="card flex flex-col items-center justify-center relative">
+
+                <div class="tensor-view scale-90 xl:scale-100">
+                    <!-- CONV1 -->
+                    <div id="conv1" class="cnn-layer w-10">
+                        <div id="conv1_blocks" class="tensor-stack" style="height: 200px;"></div>
+                        <div class="absolute -bottom-6 text-center text-slate-500" style="left: 0; right: 0; font-size: 8px; font-family: monospace;">C1</div>
+                    </div>
+
+                    <!-- POOL1 -->
+                    <div id="pool1" class="cnn-layer w-4">
+                        <div id="pool1_blocks" class="tensor-stack" style="height: 130px;"></div>
+                    </div>
+
+                    <!-- CONV2 -->
+                    <div id="conv2" class="cnn-layer w-12">
+                        <div id="conv2_blocks" class="tensor-stack" style="height: 130px;"></div>
+                        <div class="absolute -bottom-6 text-center text-slate-500" style="left: 0; right: 0; font-size: 8px; font-family: monospace;">C2</div>
+                    </div>
+
+                    <!-- POOL2 -->
+                    <div id="pool2" class="cnn-layer w-4">
+                        <div id="pool2_blocks" class="tensor-stack" style="height: 80px;"></div>
+                    </div>
+
+                    <!-- DENSE -->
+                    <div id="dense" class="cnn-layer w-8">
+                        <div id="dense_blocks" class="tensor-stack" style="height: 55px;"></div>
+                    </div>
+
+                    <!-- Prediction Hub -->
+                    <div class="flex flex-col items-center gap-4 ml-4">
+                        <div id="outNode" class="output-node">
+                            <span style="font-size: 8px; font-weight: 900; opacity: 0.4; text-transform: uppercase; color: #475569;">Class</span>
+                            <span id="finalClass" class="text-xl font-black text-white" style="letter-spacing: -0.05em;">--</span>
+                        </div>
+
+                        <!-- Cloud Export -->
+                        <div id="cloudIcon" class="opacity-20 transition-all text-blue-400 flex flex-col items-center" style="transition-duration: 0.7s;">
+                            <svg class="w-8 h-8 cloud-upload" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z"></path>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 11l0 4m0 0l-2-2m2 2l2-2"></path>
+                            </svg>
+                            <span style="font-size: 7px; font-weight: 700; margin-top: 0.25rem; text-transform: uppercase;">GCP Run</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-14 w-full max-w-xs space-y-2">
+                    <div class="flex justify-between text-slate-500" style="font-size: 10px; font-weight: 700; text-transform: uppercase;">
+                        <span>Confidence Convergence</span>
+                        <span id="confVal">0%</span>
+                    </div>
+                    <div class="progress-bar" style="height: 6px;">
+                        <div id="confBar" class="progress-fill bg-blue-500"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- DATA SPLIT PANEL -->
+        <div id="trainTestPanel" class="hidden">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- TRAIN/TEST SPLIT SCHEME -->
+                <div class="card space-y-4">
+                    <h2 class="section-header section-header-emerald">Train / Test Split</h2>
+
+                    <div class="space-y-4">
+                        <!-- Theory text -->
+                        <div class="space-y-2">
+                            <div class="font-bold text-sm" style="color: #0f172a;">Initial Data Split</div>
+                            <div class="text-xs leading-relaxed" style="color: #475569;">
+                                The dataset is split into two portions:
+                                <ul class="list-disc ml-6 mt-1 space-y-0.5" style="font-size: 0.7rem;">
+                                    <li><strong>80% Training Set</strong> - Used to train the model</li>
+                                    <li><strong>20% Test Set</strong> - Used to evaluate final model performance</li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <!-- Interpolation -->
+                        <div class="space-y-1">
+                            <div class="font-bold text-xs" style="color: #047857;">Interpolation</div>
+                            <div class="text-xs" style="color: #475569;">
+                                Align ax, ay, az sensor data to a uniform time grid for consistent sampling.
+                            </div>
+                        </div>
+
+                        <!-- Preprocessing -->
+                        <div class="space-y-1">
+                            <div class="font-bold text-xs" style="color: #047857;">Preprocessing</div>
+                            <div class="text-xs" style="color: #475569;">
+                                Apply normalization and filtering to the interpolated sensor streams.
+                            </div>
+                        </div>
+
+                        <!-- Tensor-style Sliding Windows -->
+                        <div class="space-y-2">
+                            <div class="font-bold text-xs" style="color: #047857;">Sliding Window with 50% Overlap</div>
+                            <div class="tensor-windows-container">
+                                <div class="tensor-window" style="width: 60px;">
+                                    <span class="window-number">Window 1</span>
+                                    <div class="tensor-layer" style="width: 100%;"></div>
+                                    <div class="tensor-layer" style="width: 100%;"></div>
+                                    <div class="tensor-layer" style="width: 100%;"></div>
+                                    <div class="tensor-layer" style="width: 100%;"></div>
+                                    <div class="tensor-layer" style="width: 100%;"></div>
+                                    <div class="tensor-layer" style="width: 100%;"></div>
+                                </div>
+                                <div class="tensor-window" style="width: 60px; margin-left: -20px;">
+                                    <span class="window-number">Window 2</span>
+                                    <div class="tensor-layer" style="width: 100%;"></div>
+                                    <div class="tensor-layer" style="width: 100%;"></div>
+                                    <div class="tensor-layer" style="width: 100%;"></div>
+                                    <div class="tensor-layer" style="width: 100%;"></div>
+                                    <div class="tensor-layer" style="width: 100%;"></div>
+                                    <div class="tensor-layer" style="width: 100%;"></div>
+                                </div>
+                                <div class="tensor-window" style="width: 60px; margin-left: -20px;">
+                                    <span class="window-number">Window 3</span>
+                                    <div class="tensor-layer" style="width: 100%;"></div>
+                                    <div class="tensor-layer" style="width: 100%;"></div>
+                                    <div class="tensor-layer" style="width: 100%;"></div>
+                                    <div class="tensor-layer" style="width: 100%;"></div>
+                                    <div class="tensor-layer" style="width: 100%;"></div>
+                                    <div class="tensor-layer" style="width: 100%;"></div>
+                                </div>
+                                <span style="color: #94a3b8; font-size: 1.2rem;">...</span>
+                                <div class="tensor-window" style="width: 60px;">
+                                    <span class="window-number">Window n</span>
+                                    <div class="tensor-layer" style="width: 100%;"></div>
+                                    <div class="tensor-layer" style="width: 100%;"></div>
+                                    <div class="tensor-layer" style="width: 100%;"></div>
+                                    <div class="tensor-layer" style="width: 100%;"></div>
+                                    <div class="tensor-layer" style="width: 100%;"></div>
+                                    <div class="tensor-layer" style="width: 100%;"></div>
+                                </div>
+                            </div>
+                            <div class="text-xs text-center" style="color: #64748b;">
+                                Fixed-length windows extracted with 50% overlap to capture temporal patterns
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TRAIN/VALIDATE SPLIT SCHEME -->
+                <div class="card space-y-4">
+                    <h2 class="section-header section-header-purple">Train / Validate Split</h2>
+
+                    <div class="space-y-4">
+                        <!-- Theory text -->
+                        <div class="space-y-2">
+                            <div class="font-bold text-sm" style="color: #0f172a;">From Sliding Windows</div>
+                            <div class="text-xs leading-relaxed" style="color: #475569;">
+                                The training subset is further divided:
+                                <ul class="list-disc ml-6 mt-1 space-y-0.5" style="font-size: 0.7rem;">
+                                    <li><strong>Train Subset → Split 80/20</strong></li>
+                                    <li><strong>5-fold cross-validation</strong> for robust model evaluation</li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <!-- Train/Validation Split Visualization -->
+                        <div class="space-y-2">
+                            <div class="font-bold text-xs" style="color: #7c3aed;">Train/Validation Configuration</div>
+                            <div class="validation-box">
+                                <div class="train-section">TRAIN 80%</div>
+                                <div class="val-section">VAL 20%</div>
+                            </div>
+                            <div class="text-xs text-center" style="color: #64748b;">
+                                Training data is split to create a validation set for hyperparameter tuning
+                            </div>
+                        </div>
+
+                        <!-- Model Inference -->
+                        <div class="space-y-2">
+                            <div class="font-bold text-xs" style="color: #7c3aed;">Model Inference</div>
+                            <div class="text-xs" style="color: #475569;">
+                                <ul class="list-disc ml-6 space-y-0.5" style="font-size: 0.7rem;">
+                                    <li>Forward pass through CNN layers (C1, C2)</li>
+                                    <li>Pooling and dense layers for feature extraction</li>
+                                    <li>Output classification (CAR, BIKE, etc.)</li>
+                                    <li>Deploy to GCP for production inference</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- WORKFLOW PANEL -->
+        <div id="workflowPanel" class="hidden">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                <!-- DATA ANALYSIS Column -->
+                <div class="card space-y-4">
+                    <h2 class="section-header section-header-amber" style="font-size: 0.85rem;">Data Analysis</h2>
+
+                    <div class="workflow-column space-y-3">
+                        <!-- Raw Sensor Data -->
+                        <div class="workflow-box" id="workflow-raw-data" style="background-color: #fef3c7; border: 2px solid #d97706;">
+                            <div class="font-bold text-xs mb-1" style="color: #0f172a;">Raw Sensor Data</div>
+                            <div style="font-size: 0.65rem; color: #475569;">CSV (ax, ay, az, time)</div>
+                        </div>
+
+                        <!-- Arrow -->
+                        <div class="flex justify-center">
+                            <svg class="w-5 h-5" fill="none" stroke="#475569" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"></path>
+                            </svg>
+                        </div>
+
+                        <!-- Kernel Density Estimation -->
+                        <div class="workflow-box" id="workflow-kde" style="background-color: #fed7aa; border: 2px solid #d97706;">
+                            <div class="font-bold text-xs" style="color: #0f172a;">Kernel Density Estimation</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- DATA PROCESSING Column -->
+                <div class="card space-y-4">
+                    <h2 class="section-header section-header-blue" style="font-size: 0.85rem;">Data Processing</h2>
+
+                    <div class="workflow-column space-y-3">
+                        <!-- Interpolation -->
+                        <div class="workflow-box" id="workflow-interp" style="background-color: #fef3c7; border: 2px solid #d97706;">
+                            <div class="font-bold text-xs mb-1" style="color: #0f172a;">Interpolation</div>
+                            <div style="font-size: 0.65rem; color: #475569; line-height: 1.3;">Align ax, ay, az to uniform time grid (EVAL_TIME)</div>
+                        </div>
+
+                        <!-- Arrow -->
+                        <div class="flex justify-center">
+                            <svg class="w-5 h-5" fill="none" stroke="#475569" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"></path>
+                            </svg>
+                        </div>
+
+                        <!-- Stack Sensor Data -->
+                        <div class="workflow-box" id="workflow-stack" style="background-color: #fef3c7; border: 2px solid #d97706;">
+                            <div class="font-bold text-xs mb-1" style="color: #0f172a;">Stack Sensor Data</div>
+                            <div style="font-size: 0.65rem; color: #475569; line-height: 1.3;">[ax_interp, ay_interp, az_interp]</div>
+                        </div>
+
+                        <!-- Arrow -->
+                        <div class="flex justify-center">
+                            <svg class="w-5 h-5" fill="none" stroke="#475569" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"></path>
+                            </svg>
+                        </div>
+
+                        <!-- Segmentation -->
+                        <div class="workflow-box" id="workflow-segment" style="background-color: #fef3c7; border: 2px solid #d97706;">
+                            <div class="font-bold text-xs mb-1" style="color: #0f172a;">Segmentation</div>
+                            <div style="font-size: 0.65rem; color: #475569; line-height: 1.3;">Split into fixed-length windows (SENSOR_RATE*2)</div>
+                        </div>
+
+                        <!-- Arrow -->
+                        <div class="flex justify-center">
+                            <svg class="w-5 h-5" fill="none" stroke="#475569" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"></path>
+                            </svg>
+                        </div>
+
+                        <!-- Output Tensor -->
+                        <div class="workflow-box" id="workflow-output" style="background-color: #bbf7d0; border: 2px solid #059669;">
+                            <div class="font-bold text-xs mb-1" style="color: #0f172a;">Output Tensor</div>
+                            <div style="font-size: 0.65rem; color: #475569; line-height: 1.3;">Shape: [num_segments, window_size, 3]</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TRAINING MODEL Column -->
+                <div class="card space-y-4">
+                    <h2 class="section-header section-header-purple" style="font-size: 0.85rem;">Training Model</h2>
+
+                    <div class="workflow-column space-y-3">
+                        <!-- Data Loader -->
+                        <div class="workflow-box" id="workflow-loader" style="background-color: #fef3c7; border: 2px solid #d97706;">
+                            <div class="font-bold text-xs mb-1" style="color: #0f172a;">Data Loader</div>
+                            <div style="font-size: 0.65rem; color: #475569; line-height: 1.3;">Batch and shuffle data</div>
+                        </div>
+
+                        <!-- Arrow -->
+                        <div class="flex justify-center">
+                            <svg class="w-5 h-5" fill="none" stroke="#475569" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"></path>
+                            </svg>
+                        </div>
+
+                        <!-- Neural Network Model -->
+                        <div class="workflow-box" id="workflow-nn" style="background-color: #fef3c7; border: 2px solid #d97706; min-height: 85px;">
+                            <div class="font-bold text-xs mb-1" style="color: #0f172a;">Neural Network Model</div>
+                            <div style="font-size: 0.65rem; color: #475569; line-height: 1.3;">Forward pass, Compute loss, Backpropagation</div>
+                        </div>
+
+                        <!-- Arrow -->
+                        <div class="flex justify-center">
+                            <svg class="w-5 h-5" fill="none" stroke="#475569" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"></path>
+                            </svg>
+                        </div>
+
+                        <!-- Evaluation -->
+                        <div class="workflow-box" id="workflow-eval" style="background-color: #fef3c7; border: 2px solid #d97706;">
+                            <div class="font-bold text-xs mb-1" style="color: #0f172a;">Evaluation</div>
+                            <div style="font-size: 0.65rem; color: #475569; line-height: 1.3;">Accuracy, Precision, Recall</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const rawCanvas = document.getElementById('rawCanvas');
+        const bufferCanvas = document.getElementById('bufferCanvas');
+        const slidingWindow = document.getElementById('slidingWindow');
+        const overlapWindow = document.getElementById('overlapWindow');
+        const overlapLabel = document.getElementById('overlapLabel');
+        const stepIndicator = document.getElementById('stepIndicator');
+        const processOverlay = document.getElementById('processOverlay');
+        const finalClass = document.getElementById('finalClass');
+        const cloudIcon = document.getElementById('cloudIcon');
+
+        let mode = 'random';
+        let windowIndex = 0;
+        let sensorData = [];
+        const windowWidth = 128;
+        const stride = Math.floor(windowWidth / 2); // 50% overlap: stride = windowWidth / 2
+
+        const TIMINGS = {
+            windowMove: 1200,      // Slower to see overlap clearly
+            preprocess: 800,
+            layerTraversal: 400,
+            blockStagger: 20,
+            convergenceIterDelay: 300,
+            convergenceIters: 6,
+            cloudUpload: 1500
+        };
+
+        let windowModes = [];
+        let activeTab = 'inference';
+        let trainAnimToken = 0;
+        let inferenceAnimToken = 0;
+        let workflowAnimToken = 0;
+        let currentPhase = 1;
+
+        function createBlocks(containerId, count, colorClass) {
+            const container = document.getElementById(containerId);
+            container.innerHTML = '';
+            for(let i=0; i<count; i++) {
+                const b = document.createElement('div');
+                b.className = `tensor-block ${colorClass}`;
+                b.style.flex = '1 1 0%';
+                container.appendChild(b);
+            }
+        }
+
+        function setMode(m) {
+            mode = m;
+            const modes = {bike: 'btnBike', car: 'btnCar', random: 'btnRandom'};
+            Object.keys(modes).forEach(key => {
+                const el = document.getElementById(modes[key]);
+                if (key === m) {
+                    el.className = 'btn bg-blue-600 border-blue-400';
+                    el.style.color = 'white';
+                } else {
+                    el.className = 'btn bg-slate-800 border-slate-600 text-slate-400';
+                    el.style.color = '';
+                }
+            });
+            resetPipeline();
+        }
+
+        function setTab(tab) {
+            activeTab = tab;
+            const inferencePanel = document.getElementById('inferencePanel');
+            const trainTestPanel = document.getElementById('trainTestPanel');
+            const workflowPanel = document.getElementById('workflowPanel');
+            const modeButtons = document.getElementById('modeButtons');
+            const tabInference = document.getElementById('tabInference');
+            const tabTrainTest = document.getElementById('tabTrainTest');
+            const tabWorkflow = document.getElementById('tabWorkflow');
+            const pageTitle = document.querySelector('.header h1');
+            const pageSubtitle = document.querySelector('.header p');
+
+            // Hide all panels first
+            inferencePanel.style.display = 'none';
+            trainTestPanel.classList.add('hidden');
+            workflowPanel.classList.add('hidden');
+
+            // Reset all tab buttons
+            tabInference.className = 'btn bg-slate-800 border-slate-600 text-slate-200';
+            tabTrainTest.className = 'btn bg-slate-800 border-slate-600 text-slate-200';
+            tabWorkflow.className = 'btn bg-slate-800 border-slate-600 text-slate-200';
+
+            if(tab === 'trainTest') {
+                trainTestPanel.classList.remove('hidden');
+                modeButtons.classList.add('hidden');
+                tabTrainTest.className = 'btn btn-active';
+
+                pageTitle.innerText = 'Vehicle Pipeline: Data Split Schemes';
+                pageSubtitle.innerText = 'Train/test split and train/validate configurations';
+
+                stopInferenceAnimation();
+                setTimeout(() => startTrainingAnimation(), 100);
+            } else if(tab === 'workflow') {
+                workflowPanel.classList.remove('hidden');
+                modeButtons.classList.add('hidden');
+                tabWorkflow.className = 'btn btn-active';
+
+                pageTitle.innerText = 'Vehicle Pipeline: Complete Workflow';
+                pageSubtitle.innerText = 'End-to-end data processing and model training pipeline';
+
+                stopInferenceAnimation();
+                stopTrainingAnimation();
+                setTimeout(() => startWorkflowAnimation(), 100);
+            } else {
+                inferencePanel.style.display = 'grid';
+                modeButtons.classList.remove('hidden');
+                tabInference.className = 'btn btn-active';
+
+                pageTitle.innerText = 'Vehicle Pipeline: Production Inference';
+                pageSubtitle.innerText = 'Cloud-native data slicing & 1D-CNN convergence';
+
+                stopTrainingAnimation();
+                stopWorkflowAnimation();
+                setTimeout(() => runPipelineStep(), 100);
+            }
+        }
+
+        function generateData() {
+            sensorData = [];
+            windowModes = [];
+            const classes = ['CAR', 'BIKE'];
+
+            if(mode === 'random') {
+                const targetLen = 800;
+                const blockLen = 200;
+                const classMarker = [];
+
+                while(sensorData.length < targetLen) {
+                    const cls = classes[Math.floor(sensorData.length / blockLen) % classes.length];
+                    const startIdx = sensorData.length;
+                    const endIdx = Math.min(startIdx + blockLen, targetLen);
+                    for(let i=startIdx; i<endIdx; i++) {
+                        let v = 0;
+                        const j = i - startIdx;
+                        if(cls === 'CAR') v = Math.sin((j+startIdx)*0.05)*20 + Math.sin((j+startIdx)*0.02)*10 + (Math.random()*2);
+                        else if(cls === 'BIKE') v = Math.sin((j+startIdx)*0.3)*10 + (Math.random()*15);
+                        sensorData.push(v);
+                        classMarker.push(cls);
+                    }
+                }
+
+                const numWindows = Math.floor((sensorData.length - windowWidth) / stride) + 1;
+                for(let w=0; w<numWindows; w++) {
+                    const center = w * stride + Math.floor(windowWidth / 2);
+                    windowModes.push(classMarker[center] || classes[w % classes.length]);
+                }
+            } else {
+                for(let i=0; i<800; i++) {
+                    if(mode === 'car') sensorData.push(Math.sin(i*0.05)*20 + Math.sin(i*0.02)*10 + (Math.random()*2));
+                    else if(mode === 'bike') sensorData.push(Math.sin(i*0.3)*10 + (Math.random()*15));
+                    else sensorData.push((Math.random() - 0.5) * 50);
+                }
+            }
+        }
+
+        function drawMainStream() {
+            const ctx = rawCanvas.getContext('2d');
+            ctx.clearRect(0, 0, rawCanvas.width, rawCanvas.height);
+            ctx.beginPath();
+            ctx.strokeStyle = mode === 'random' ? '#9333ea' : '#3b82f6';
+            ctx.lineWidth = 1.5;
+            const scaleX = rawCanvas.width / sensorData.length;
+            sensorData.forEach((y, i) => {
+                const x = i * scaleX;
+                if(i === 0) ctx.moveTo(x, 70 + y);
+                else ctx.lineTo(x, 70 + y);
+            });
+            ctx.stroke();
+        }
+
+        function drawBuffer(data) {
+            const ctx = bufferCanvas.getContext('2d');
+            ctx.clearRect(0, 0, bufferCanvas.width, bufferCanvas.height);
+            ctx.beginPath();
+            ctx.strokeStyle = '#047857';
+            ctx.lineWidth = 3;
+            const scale = bufferCanvas.width / data.length;
+            data.forEach((y, i) => {
+                if(i === 0) ctx.moveTo(i*scale, 40 + y);
+                else ctx.lineTo(i*scale, 40 + y);
+            });
+            ctx.stroke();
+        }
+
+        async function runPipelineStep() {
+            const token = inferenceAnimToken;
+
+            if (activeTab !== 'inference' || token !== inferenceAnimToken) return;
+
+            stepIndicator.innerText = "STATUS: SLIDING WINDOW";
+
+            // Calculate current position in data array
+            const currentDataX = windowIndex * stride;
+
+            // Scale to canvas coordinates
+            const scaleX = rawCanvas.width / sensorData.length;
+            const startX = currentDataX * scaleX; // left position for the initial window
+            const windowWidthCanvas = windowWidth * scaleX;
+            const strideCanvas = stride * scaleX; // 64-sample step in canvas px
+
+            // Each pipeline step should move exactly one stride (half the window)
+            // and perform ONE action at a time (either green or yellow).
+            const stepDuration = Math.max(50, Math.floor(TIMINGS.windowMove / 2));
+
+            // Prepare visual windows (set width once)
+            slidingWindow.style.width = `${windowWidthCanvas}px`;
+            slidingWindow.classList.add('window-active');
+            overlapWindow.style.width = `${windowWidthCanvas}px`;
+            overlapLabel.style.opacity = '1';
+
+            // If starting from the beginning, place windows at startX without transition
+            if (windowIndex === 0) {
+                slidingWindow.style.transition = 'none';
+                slidingWindow.style.left = `${startX}px`;
+                // overlap hidden initially (shadow appears after first green move)
+                overlapWindow.style.display = 'none';
+                // allow render
+                await new Promise(r => setTimeout(r, 30));
+            } else {
+                // ensure overlap is visible for continuous motion
+                overlapWindow.style.display = 'block';
+                // small pause to let layout settle
+                await new Promise(r => setTimeout(r, 10));
+            }
+            if (token !== inferenceAnimToken) return;
+
+            // Now set transitions to match the JS wait so moves complete before next action
+            slidingWindow.style.transition = `left ${stepDuration}ms ease-in-out, width ${stepDuration}ms ease-in-out`;
+            overlapWindow.style.transition = `left ${stepDuration}ms ease-in-out, width ${stepDuration}ms ease-in-out`;
+
+            // Only one stride (half-window) per pipeline invocation
+            const sequenceIterations = 1;
+
+            // For each iteration: move green forward one stride (relative), then move yellow to previous green
+            for (let i = 1; i <= sequenceIterations; i++) {
+                if (token !== inferenceAnimToken) return;
+
+                // Determine previous green left: prefer inline style, else compute from offset
+                let prevGreenLeft = null;
+                if (slidingWindow.style && slidingWindow.style.left && slidingWindow.style.left !== '') {
+                    prevGreenLeft = parseFloat(slidingWindow.style.left);
+                } else {
+                    prevGreenLeft = slidingWindow.offsetLeft || startX;
+                }
+
+                // Move green exactly one stride relative to its current position
+                const greenPos = prevGreenLeft + strideCanvas;
+                // ensure transitions are enabled
+                slidingWindow.style.transition = `left ${stepDuration}ms ease-in-out, width ${stepDuration}ms ease-in-out`;
+                overlapWindow.style.transition = `left ${stepDuration}ms ease-in-out, width ${stepDuration}ms ease-in-out`;
+
+                slidingWindow.style.left = `${greenPos}px`;
+                await new Promise(r => setTimeout(r, stepDuration));
+                if (token !== inferenceAnimToken) return;
+
+                // Reveal and move yellow to where green was before the move (shadow)
+                overlapWindow.style.display = 'block';
+                overlapWindow.style.left = `${prevGreenLeft}px`;
+                await new Promise(r => setTimeout(r, stepDuration));
+                if (token !== inferenceAnimToken) return;
+            }
+
+            stepIndicator.innerText = "STATUS: PREPROCESSING";
+            const segment = sensorData.slice(currentDataX, currentDataX + windowWidth);
+            drawBuffer(segment);
+            processOverlay.style.opacity = "1";
+            await new Promise(r => setTimeout(r, TIMINGS.preprocess));
+            if (token !== inferenceAnimToken) return;
+            processOverlay.style.opacity = "0";
+
+            stepIndicator.innerText = "STATUS: INFERENCE (LAYER PASS)";
+            const layers = ['conv1', 'pool1', 'conv2', 'pool2', 'dense'];
+            for(let id of layers) {
+                if (token !== inferenceAnimToken) return;
+                const el = document.getElementById(id);
+                el.classList.add('active-layer');
+                const blocks = el.querySelectorAll('.tensor-block');
+                blocks.forEach((b, i) => {
+                    setTimeout(() => {
+                        b.style.backgroundColor = '#60a5fa';
+                        b.style.borderColor = 'rgba(255,255,255,0.6)';
+                    }, i * TIMINGS.blockStagger);
+                    setTimeout(() => {
+                        b.style.backgroundColor = '';
+                        b.style.borderColor = '';
+                    }, TIMINGS.layerTraversal / 2 + i * TIMINGS.blockStagger);
+                });
+                await new Promise(r => setTimeout(r, TIMINGS.layerTraversal));
+            }
+            if (token !== inferenceAnimToken) return;
+
+            const classes = ['BIKE', 'CAR'];
+            if(mode === 'random') {
+                for(let i=0; i<TIMINGS.convergenceIters; i++) {
+                    if (token !== inferenceAnimToken) return;
+                    finalClass.innerText = classes[Math.floor(Math.random()*2)];
+                    document.getElementById('confVal').innerText = (Math.random()*100).toFixed(0) + "%";
+                    await new Promise(r => setTimeout(r, TIMINGS.convergenceIterDelay));
+                }
+            }
+            if (token !== inferenceAnimToken) return;
+
+            let actualResult;
+            if(mode === 'random') {
+                actualResult = (windowModes[windowIndex] || 'CAR');
+            } else {
+                actualResult = mode.toUpperCase();
+            }
+            finalClass.innerText = actualResult;
+
+            const conf = 88 + Math.random() * 12;
+            document.getElementById('confVal').innerText = conf.toFixed(1) + "%";
+            document.getElementById('confBar').style.width = conf + "%";
+            document.getElementById('outNode').classList.add('active');
+
+            stepIndicator.innerText = "STATUS: CLOUD UPLOAD";
+            cloudIcon.style.opacity = "1";
+            await new Promise(r => setTimeout(r, TIMINGS.cloudUpload));
+            if (token !== inferenceAnimToken) return;
+
+            layers.forEach(id => document.getElementById(id).classList.remove('active-layer'));
+            slidingWindow.classList.remove('window-active');
+            document.getElementById('outNode').classList.remove('active');
+            cloudIcon.style.opacity = "0.2";
+
+            windowIndex++;
+            if(windowIndex * stride + windowWidth > sensorData.length) {
+                windowIndex = 0;
+                overlapWindow.style.display = 'none'; // Hide overlap on reset
+            }
+
+            await new Promise(r => setTimeout(r, 300));
+            if (token === inferenceAnimToken && activeTab === 'inference') {
+                runPipelineStep();
+            }
+        }
+
+        function stopInferenceAnimation() {
+            inferenceAnimToken += 1;
+        }
+
+        function resetPipeline() {
+            windowIndex = 0;
+            generateData();
+            drawMainStream();
+            document.getElementById('confBar').style.width = "0%";
+            finalClass.innerText = "--";
+            overlapWindow.style.display = 'none';
+        }
+
+        function stopTrainingAnimation() {
+            trainAnimToken += 1;
+        }
+
+        function startTrainingAnimation() {
+            const token = ++trainAnimToken;
+            // No animation needed for text-based layout
+        }
+
+        function stopWorkflowAnimation() {
+            workflowAnimToken += 1;
+        }
+
+        function startWorkflowAnimation() {
+            const token = ++workflowAnimToken;
+
+            // Define the animation sequence based on the workflow diagram
+            const sequence = [
+                // Column 1: Data Analysis
+                'workflow-raw-data',
+                'workflow-kde',
+                // Column 2: Data Processing
+                'workflow-interp',
+                'workflow-stack',
+                'workflow-segment',
+                'workflow-output',
+                // Column 3: Training Model
+                'workflow-loader',
+                'workflow-nn',
+                'workflow-eval'
+            ];
+
+            const run = async () => {
+                while (activeTab === 'workflow' && token === workflowAnimToken) {
+                    // Animate through each step
+                    for (let i = 0; i < sequence.length; i++) {
+                        if (token !== workflowAnimToken) return;
+
+                        const boxId = sequence[i];
+                        const box = document.getElementById(boxId);
+                        if (!box) continue;
+
+                        // Highlight current box
+                        box.classList.add('active');
+
+                        // Wait before moving to next
+                        await new Promise(r => setTimeout(r, 800));
+
+                        // Remove highlight
+                        box.classList.remove('active');
+
+                        // Small pause between boxes
+                        await new Promise(r => setTimeout(r, 200));
+                    }
+
+                    // Pause before restarting the cycle
+                    await new Promise(r => setTimeout(r, 1000));
+                }
+            };
+
+            run();
+        }
+
+        window.onload = () => {
+            rawCanvas.width = rawCanvas.clientWidth;
+            rawCanvas.height = rawCanvas.clientHeight;
+            bufferCanvas.width = bufferCanvas.clientWidth;
+            bufferCanvas.height = bufferCanvas.clientHeight;
+
+            createBlocks('conv1_blocks', 32, '');
+            createBlocks('pool1_blocks', 16, 'pool-block');
+            createBlocks('conv2_blocks', 24, '');
+            createBlocks('pool2_blocks', 12, 'pool-block');
+            createBlocks('dense_blocks', 8, 'dense-block');
+
+            resetPipeline();
+            inferenceAnimToken = 0;
+            runPipelineStep();
+            setTab('inference');
+        };
+    </script>
+</body>
+</html>
